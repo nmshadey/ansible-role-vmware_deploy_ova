@@ -1,0 +1,23 @@
+galaxy_info:
+  author: Gavin Stephens
+  description: Deploy OVA/OVF template to VMware vCenter Server or VMware ESXi.
+  role_name: vmware_deploy_ova
+
+  license: MIT
+
+  min_ansible_version: 2.8
+
+  platforms:
+  - name: VMware vCenter Server
+    versions:
+    - 6.0
+    - 6.5
+    - 6.7
+
+  galaxy_tags: 
+  - vmware
+  - ova
+  - ovf
+
+dependencies: []
+  

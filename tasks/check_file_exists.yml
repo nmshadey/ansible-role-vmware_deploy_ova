@@ -1,0 +1,7 @@
+---
+- name: Check that OVA file exists.
+  stat:
+    path: "{{ ova_path }}/{{ ova_file }}"
+    get_checksum: no
+  delegate_to: localhost
+  register: check_ova_file

@@ -1,4 +1,4 @@
-Role Name
+vmware_deploy_ova
 =========
 
 This role can be used to import an OVA/OVF template to a target VMware vCenter Server or VMware ESXi host.
@@ -12,7 +12,7 @@ Requirements
 Role Variables
 --------------
 
-### Default variables that have been defined in defaults/main.yml
+  ### Default variables that have been defined in defaults/main.yml
 
   Set where the OVA file should be sourced.
 
@@ -52,7 +52,9 @@ Role Variables
   ova_deployment_disk_type: thin
   ```
 
-### The following parameters need to be provided, as extra vars, group_vars or host_vars:
+  ### The following parameters need to be provided, as extra vars, group_vars or host_vars:
+
+  #### OVA Deployment Variables
 
   Set the OVA deployment variables.
   ```
@@ -66,14 +68,16 @@ Role Variables
   ova_deployment_datastore: "datastore"
   ```
 
-  The following are only required when deploying to vCenter Server.
+  The following are only required when deploying to vCenter Server. If folder is not defined then the appliance will deploy to the default folder.
   ```
   ova_deployment_datacenter: "vcenter datacenter"
   ova_deployment_cluster: "vcenter cluster"
   ova_deployment_folder: "vcenter folder"
   ```
 
-### The following mandatory global variables need to be set:
+  ### The following mandatory global variables need to be set:
+
+  #### OVA Configuration
 
   Set the OVA file name.
   ```
@@ -85,14 +89,18 @@ Role Variables
   ova_path: "/path/to/ova_file"
   ```
 
-### The following optional global variables can be set:
+  ### The following optional global variables can be set:
+
+  #### OVA Download Configuration
 
   Set the URL to the OVA file if source is set to 'http' (do not use a leading /).
   ```
   ova_url: "http[s]://example.com/ovas"
   ```
 
-### The following mandatory variables need to be set in roles that use this role:
+  ### The following mandatory variables need to be set in roles that use this role:
+
+  #### OVA Properties
 
   A key:value pair for the network property.
   ```
@@ -118,12 +126,14 @@ Role Variables
     "guestinfo.cis.appliance.net.mode": "static"
   ```
 
-### The following optional variables can be set in roles that use this role:
+  ### The following optional variables can be set in roles that use this role:
 
   A string containing the deployment option.
   ```
   ova_deployment_option: "option"
   ```
+
+  #### OVA vApp Properties
 
   The vApp Properties as list of dictionaries with userConfigurable set to true.
   ```

@@ -1,13 +1,6 @@
 ---
 - include_tasks: check_file_exists.yml
 
-- name: Fail if OVA file is not found.
-  fail:
-    msg: "OVA file {{ ova_file }} not found in path {{ ova_path }}"
-  when: |
-    not (check_ova_file.stat.exists|bool) and
-    ova_source == "local"
-
 - include_tasks: download_ova_file.yml
   when: |
     ova_source|lower == "http" and
@@ -23,5 +16,9 @@
     vapp_properties is defined and
     ova_imported.changed|bool
 
+- name: Configure Virtual Machine Hardware
+  include_tasks: configure_hardware.yml
+  when: |
+    
 - include_tasks: power_on_ova.yml
   when: ova_power_on_after_deploy|bool

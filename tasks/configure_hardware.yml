@@ -1,0 +1,66 @@
+---
+- name: Configure Hot Add
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | upper }}"
+    hardware:
+      hotadd_cpu: "{{ ova_hardware_hotadd_cpu_enabled }}"
+      hotadd_memory: "{{ ova_hardware_hotadd_mem_enabled }}"
+      memory_gb: 
+    state: present
+  delegate_to: localhost
+
+- name: Configure CPUs
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | upper }}"
+    hardware:
+      num_cpus: "{{ ova_hardware_num_cpus }}"
+    state: present
+  delegate_to: localhost
+  when: ova_hardware_num_cpus is defined
+
+- name: Configure Memory
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | upper }}"
+    hardware:
+      memory_mb: "{{ (ova_hardware_mem_gb * 1024) | int }}"
+    state: present
+  delegate_to: localhost
+  when: ova_hardware_mem_gb is defined
+
+- name: Configure Disks
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | upper }}"
+    disk: "{{ ova_hardware_disks }}"
+    state: present
+  delegate_to: localhost
+  when: ova_hardware_disks is defined
+
+- name: Configure Networks
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | upper }}"
+    datacenter: "{{ ova_deployment_datacenter | default(omit) }}"
+    cluster: "{{ ova_deployment_cluster | default(omit) }}"
+    networks: "{{ ova_hardware_networks }}"
+    state: present
+  delegate_to: localhost
+  when: ova_hardware_networks is defined

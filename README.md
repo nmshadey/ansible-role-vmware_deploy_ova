@@ -52,6 +52,12 @@ Role Variables
   ova_deployment_disk_type: thin
   ```
 
+  Hardware Configuration
+  ```
+  ova_hardware_hotadd_cpu_enabled: true
+  ova_hardware_hotadd_mem_enabled: true
+  ```
+
   ### The following parameters need to be provided, as extra vars, group_vars or host_vars:
 
   #### OVA Deployment Variables
@@ -113,7 +119,7 @@ Role Variables
     "Network 1": "label"
   ```
 
-  The OVA Properties as set of dictionary key: value pairs.
+  The OVA Properties as a set of dictionary key: value pairs.
   ```
   ova_properties:
     "key": "value"
@@ -153,7 +159,33 @@ Role Variables
       value: "true"
       userConfigurable: true
   ```
+  #### Hardware Configuration
 
+  Set the number of CPU sockets.
+  ```
+  ova_hardware_num_cpus: 2
+  ```
+
+  Set the amount of memory in GB.
+  ```
+  ova_hardware_mem_gb: 6
+  ```
+
+  Set the disks to add.
+  ```
+  ova_hardware_disks:
+    - size_gb: 2
+      type: thin # Hard Disk 1
+    - size_gb: 4
+      type: thin # Hard Disk 2
+  ```
+  
+  Set the networks to add.
+  ```
+  ova_hardware_networks:
+    - name: "network label"  # nic 1
+    - name: "network label"  # nic 2
+  ```
 Example Playbook
 ----------------
 

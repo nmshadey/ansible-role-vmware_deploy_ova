@@ -23,3 +23,7 @@ ova_wait_for_ip_address: no
 
 ## The default disk format to use for the imported OVA's disks.
 ova_deployment_disk_type: thin
+
+## Hardware Configuration
+ova_hardware_hotadd_cpu_enabled: true
+ova_hardware_hotadd_mem_enabled: true

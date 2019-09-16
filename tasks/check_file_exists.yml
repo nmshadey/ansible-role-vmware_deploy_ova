@@ -5,3 +5,10 @@
     get_checksum: no
   delegate_to: localhost
   register: check_ova_file
+
+- name: Fail if OVA file is not found.
+  fail:
+    msg: "OVA file {{ ova_file }} not found in path {{ ova_path }}"
+  when: |
+    not (check_ova_file.stat.exists|bool) and
+    ova_source == "local"

@@ -1,0 +1,186 @@
+---
+- name: Get API Session Key
+  uri:
+    url: "https://{{ inventory_hostname|lower }}/rest/com/vmware/cis/session"
+    user: "{{ vcsa_sso_username }}"
+    password: "{{ vcsa_sso_password }}"
+    validate_certs: "{{ http_validate_certs }}"
+    force_basic_auth: yes
+    method: POST
+    headers:
+      Accept: "{{ http_accept }}"
+    status_code: [200, 400]
+  register: vcsa_auth_response
+  delegate_to: localhost
+  delegate_facts: true
+  until: vcsa_auth_response.status == 200
+  retries: 100
+  delay: 10
+
+- name: Set API Session Key
+  set_fact:
+    vcsa_api_session_key: "{{ vcsa_auth_response.json.value }}"
+
+- name: Get OVA Session Key
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/session"
+    user: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ http_validate_certs }}"
+    force_basic_auth: yes
+    method: POST
+    headers:
+      Accept: "{{ http_accept }}"
+    status_code: [200, 400]
+  register: ova_auth_response
+  delegate_to: localhost
+  delegate_facts: true
+  until: ova_auth_response.status == 200
+  retries: 100
+  delay: 10
+
+- name: Set OVA Session Key
+  set_fact:
+    ova_session_key: "{{ ova_auth_response.json.value }}"
+
+- name: List all tags
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/tagging/category"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ ova_session_key }}"
+    force_basic_auth: yes
+    method: GET
+    status_code: [200, 400]
+  register: list_cat_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Create SERVER_TYPE category
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/tagging/category"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ ova_session_key }}"
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      create_spec: 
+        name: "SERVER_TYPE"
+        description: "Type of server (vCSA6.5, vCSA7.0, vRO7.5)"
+        cardinality: "SINGLE"
+        associable_types: []
+    status_code: [200, 400]
+  register: server_cat_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Create SERVER_TYPE tag
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/tagging/tag"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ ova_session_key }}"
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      create_spec: 
+        name: "{{ server_type }}"
+        description: "Type of server (vCSA6.5, vCSA7.0, vRO7.5)"
+        category_id: "{{ server_cat_response.json.value }}"
+    status_code: [200, 400]
+  register: server_tag_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Create TENANT category
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/tagging/category"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ ova_session_key }}"
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      create_spec: 
+        name: "TENANT"
+        description: "Tenant type (Retail, Gaia, Kubernetes)"
+        cardinality: "SINGLE"
+        associable_types: []
+    status_code: [200, 400]
+  register: tenant_cat_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Create TENANT tag
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/tagging/tag"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ ova_session_key }}"
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      create_spec: 
+        category_id: "{{ tenant_cat_response.json.value }}"
+        description: "Tenant type (Retail, Gaia, Kubernetes)"
+        name: "{{ tenant }}"
+    status_code: [200, 400]
+  register: tenant_tag_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Add tags to virtual machine
+  uri:
+    url: "https://{{ inventory_hostname|lower }}/rest/com/vmware/cis/tagging/tag-association?~action=attach-multiple-tags-to-object"
+    validate_certs: "{{ http_validate_certs }}"
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ vcsa_api_session_key }}"
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      object_id: 
+        type: "VirtualMachine"
+        id: "{{ inventory_hostname_short }}"
+      tag_ids:
+        - "server_tag_response.json.value"
+        - "tenant_tag_response.json.value"
+    status_code: [200, 400]
+  register: tag_add_response
+  delegate_to: localhost
+  delegate_facts: true
+
+- name: Remove OVA Session Key
+  uri:
+    url: "https://{{ ova_deployment_hostname }}/rest/com/vmware/cis/session"
+    validate_certs: "{{ http_validate_certs }}"
+    method: DELETE
+    headers:
+      Accept: "{{ http_accept }}"
+      ova-session-id: "{{ ova_api_session_key }}"
+    status_code: [200]
+  register: ova_auth_logout_response
+  delegate_to: localhost
+
+- name: Remove API Session Key
+  uri:
+    url: "https://{{  inventory_hostname|lower }}/rest/com/vmware/cis/session"
+    validate_certs: "{{ http_validate_certs }}"
+    method: DELETE
+    headers:
+      Accept: "{{ http_accept }}"
+      vmware-api-session-id: "{{ vcsa_api_session_key }}"
+    status_code: [200]
+  register: vcsa_auth_logout_response
+  delegate_to: localhost

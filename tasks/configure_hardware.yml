@@ -1,15 +1,16 @@
 ---
+- debug: msg="{{ lookup('pipe','date +%Y-%m-%d--%H:%M:%S') }}"
+
 - name: Configure Hot Add
   vmware_guest:
     hostname: "{{ ova_deployment_hostname }}"
     username: "{{ ova_deployment_username }}"
     password: "{{ ova_deployment_password }}"
     validate_certs: "{{ ova_validate_certs }}"
-    name: "{{ inventory_hostname_short | upper }}"
+    name: "{{ inventory_hostname_short | lower }}"
     hardware:
       hotadd_cpu: "{{ ova_hardware_hotadd_cpu_enabled }}"
       hotadd_memory: "{{ ova_hardware_hotadd_mem_enabled }}"
-      memory_gb: 
     state: present
   delegate_to: localhost
 
@@ -19,7 +20,7 @@
     username: "{{ ova_deployment_username }}"
     password: "{{ ova_deployment_password }}"
     validate_certs: "{{ ova_validate_certs }}"
-    name: "{{ inventory_hostname_short | upper }}"
+    name: "{{ inventory_hostname_short | lower }}"
     hardware:
       num_cpus: "{{ ova_hardware_num_cpus }}"
     state: present
@@ -32,7 +33,7 @@
     username: "{{ ova_deployment_username }}"
     password: "{{ ova_deployment_password }}"
     validate_certs: "{{ ova_validate_certs }}"
-    name: "{{ inventory_hostname_short | upper }}"
+    name: "{{ inventory_hostname_short | lower }}"
     hardware:
       memory_mb: "{{ (ova_hardware_mem_gb * 1024) | int }}"
     state: present
@@ -40,16 +41,27 @@
   when: ova_hardware_mem_gb is defined
 
 - name: Configure Disks
-  vmware_guest:
+  vmware_guest_disk:
     hostname: "{{ ova_deployment_hostname }}"
     username: "{{ ova_deployment_username }}"
     password: "{{ ova_deployment_password }}"
+    datacenter: "{{ ova_deployment_datacenter }}"
     validate_certs: "{{ ova_validate_certs }}"
-    name: "{{ inventory_hostname_short | upper }}"
-    disk: "{{ ova_hardware_disks }}"
-    state: present
+    name: "{{ inventory_hostname_short | lower }}"
+    disk: 
+      - size_gb: "{{ item.size_gb }}"
+        scsi_controller: "{{ item.scsi_controller }}"
+        unit_number: "{{ item.unit_number }}"
+        device: "{{ item.device }}"
+        mount_point: "{{ item.mount_point }}"
+        type: "{{ ova_deployment_disk_type }}"
+        datastore: "{{ ova_deployment_datastore }}"
+        state: present
+  loop: "{{ ova_hardware_disks }}"
   delegate_to: localhost
-  when: ova_hardware_disks is defined
+  when:
+    - ova_hardware_disks is defined
+    - ova_deployed.changed|bool
 
 - name: Configure Networks
   vmware_guest:
@@ -57,10 +69,32 @@
     username: "{{ ova_deployment_username }}"
     password: "{{ ova_deployment_password }}"
     validate_certs: "{{ ova_validate_certs }}"
-    name: "{{ inventory_hostname_short | upper }}"
+    name: "{{ inventory_hostname_short | lower }}"
     datacenter: "{{ ova_deployment_datacenter | default(omit) }}"
     cluster: "{{ ova_deployment_cluster | default(omit) }}"
     networks: "{{ ova_hardware_networks }}"
     state: present
   delegate_to: localhost
   when: ova_hardware_networks is defined
+
+- name: Get the username running the deployment
+  become: false
+  local_action: command whoami
+  register: username_on_the_host
+
+- name: Set annotation
+  vmware_guest:
+    hostname: "{{ ova_deployment_hostname }}"
+    username: "{{ ova_deployment_username }}"
+    password: "{{ ova_deployment_password }}"
+    validate_certs: "{{ ova_validate_certs }}"
+    name: "{{ inventory_hostname_short | lower }}"
+    annotation:  |
+      "Product: {{ ova_file }}
+      Server type: {{ server_type }}
+      Deployment version: {{ appliance_deployment_version }}
+      Deployed by: {{ username_on_the_host.stdout }}
+      Deployed time: {{ lookup('pipe','date +%Y-%m-%d--%H:%M:%S') }}
+      Environment: {{ active_environment }}"
+    state: present
+  delegate_to: localhost
